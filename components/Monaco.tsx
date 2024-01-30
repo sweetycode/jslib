@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "preact/hooks"
-import { dynScript } from "@jslib/scripts/dynld"
-import { debounce } from "@jslib/scripts/perf"
+import { dynScript } from "../scripts/dynld"
+import { debounce } from "../scripts/perf"
 
 interface Props {
     value: string

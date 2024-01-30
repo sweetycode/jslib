@@ -3,17 +3,22 @@
 
 ## Initialize
 
-1. Create symbolic link
+1. Create submodule
 
 ```sh
-ln -s ../jslib ./
+git submodule add git@my.github.com:sweetycode/jslib.git
 ```
 
-2. Create build file
+2. Update submodule
 
 ```sh
-chmod +x build.sh
+git submodule update
 ```
 
-3. Add to import paths
+3. Force pull from remote
+
+```sh
+git fetch origin
+it reset --hard origin/master
+```
 
