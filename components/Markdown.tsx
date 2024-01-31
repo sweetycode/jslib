@@ -1,6 +1,16 @@
-import { render_template } from '../content/template'
+import { renderTemplate } from '../content/template'
 // @ts-ignore: Allow host project lack of the external dependeny
 import {marked} from 'marked'
+
+marked.use({renderer: {
+    paragraph(text: string): string|false {
+        if (text.trim().startsWith('<astro')) {
+            return text
+        }
+        return false
+    }
+}})
+
 
 function getPrefixedWhitespace(s: string): string {
     return /^\s*/.exec(s)![0]
@@ -42,7 +52,7 @@ export default function Markdown({children, debug}: {children?: any, debug?: boo
     const {result: markdown, prefixedWhitespace} = stripPrefiexedWhitespace(rawInput)
     //const instructedMarkdown = instructMarkdown(markdown)
     const fixedMarkdown = fixAstroComponent(markdown)
-    const renderedMarkdown = render_template(fixedMarkdown, {})
+    const renderedMarkdown = renderTemplate(fixedMarkdown, {})
     if (debug) {
         console.log({rawInput, prefixedWhitespace, markdown, renderedMarkdown})
     }

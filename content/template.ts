@@ -78,12 +78,15 @@ class Table implements Command {
     }
 
     render(body: string, kv: {head: boolean, full: boolean}): string {
-        let lines = body.split('\n').map(line => line.split('|'))
+        let lines = body.split('\n').map(line => line.trim()).filter(Boolean).map(line => line.split('|'))
+        if (lines.length == 0) {
+            return ''
+        }
         
-        const thead = kv.head ? `\n<thead><tr>${lines[0].map(v => `\n<td>${v}</td>\n`)}</tr></thead>\n`: ''
+        const thead = kv.head ? `\n<thead><tr>${lines[0].map(v => `<th>${v}</th>`).join('')}</tr></thead>\n`: ''
         lines = kv.head ? lines.slice(1): lines
 
-        return `<table>${thead}<tbody>${lines.map(line => `\n<tr>${line.map(v => `<td>${v}</td>`)}</tr>`)}</tbody></table>`
+        return `<table>${thead}<tbody>${lines.map(line => `\n<tr>${line.map(v => `<td>${v}</td>`).join('')}</tr>`).join('\n')}</tbody></table>`
     }
 }
 
@@ -149,7 +152,7 @@ class CommandStack {
 class Transpiler {
     commandsMap: Map<string, Command>
     commandsPattern: RegExp
-    commandStack: CommandStack = new CommandStack()
+    stack: CommandStack = new CommandStack()
 
     constructor(commandsMap: Map<string, Command>) {
         this.commandsMap = commandsMap
@@ -176,12 +179,12 @@ class Transpiler {
             const content = source.substring(lastIndex, startIndex)
             console.log({allMatched, commandName, argument, startIndex, selfClose, lastIndex, content})
 
-            commandName == 'end' && this.commandStack.verify(argument)
-            results.push(this.commandStack.apply(ctx, content))
-            commandName == 'end' ? this.commandStack.pop(): this.commandStack.push(this.commandsMap.get(commandName)!, argument)
+            commandName == 'end' && this.stack.verify(argument)
+            results.push(this.stack.apply(ctx, content))
+            commandName == 'end' ? this.stack.pop(): this.stack.push(this.commandsMap.get(commandName)!, argument)
             if (commandName != 'end' && selfClose) {
-                results.push(this.commandStack.apply(ctx, ''))
-                this.commandStack.pop()
+                results.push(this.stack.apply(ctx, ''))
+                this.stack.pop()
             }
 
             lastIndex = startIndex + allMatched.length
@@ -189,7 +192,7 @@ class Transpiler {
         }
 
         const remainingContent = source.substring(lastIndex)
-        results.push(this.commandStack.apply(ctx, remainingContent))
+        results.push(this.stack.apply(ctx, remainingContent))
 
         return results.join('')
     }
@@ -201,6 +204,7 @@ register.register(new IfCN())
         .register(new IfEN())
         .register(new Newline())
         .register(new Ctx())
+        .register(new Table())
 
 let s = `
 # abc
@@ -218,11 +222,11 @@ _@ifEN()_ hello world _@end()_
 
 export type TemplateContext = Context
 
-export function render_template(source: string, ctx: TemplateContext): string {
+export function renderTemplate(source: string, ctx: TemplateContext): string {
     const transpiler = register.getTransplier()
     return transpiler.transpile(source, ctx)
 }
 
 export function test() {
-    console.log(render_template(s, {'lang': 'cn'}))
+    console.log(renderTemplate(s, {'lang': 'cn'}))
 }
