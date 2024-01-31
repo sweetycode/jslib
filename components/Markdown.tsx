@@ -1,7 +1,6 @@
 import { render_template } from '../content/template'
+// @ts-ignore: Allow host project lack of the external dependeny
 import {marked} from 'marked'
-
-
 
 function getPrefixedWhitespace(s: string): string {
     return /^\s*/.exec(s)![0]
