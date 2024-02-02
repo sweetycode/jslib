@@ -19,9 +19,10 @@ function dynMonaco(): Promise<MonacoEditor> {
     return new Promise((resolve, reject) => {
         dynScript('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js')
         .then(() => {
-            const windowRequire = (globalThis.require as any)
+            const windowRequire = (window as any).require as any
+            const windowMonaco = (window as any).monaco as any
             windowRequire.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }})
-            windowRequire(['vs/editor/editor.main'], () => resolve(window.monaco as MonacoEditor))
+            windowRequire(['vs/editor/editor.main'], () => resolve(windowMonaco as MonacoEditor))
         }).catch(reject)
     })
 }
