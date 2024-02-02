@@ -5,21 +5,35 @@
  */
 
 
-interface Context {
+export interface TemplateContext {
     lang?: 'cn'|'en'
-    payload?: {
+    vars?: {
         [key: string]: string
     }
 }
 
 interface Command {
     name: string
-    handle(ctx: Context, argument: string, body: string): string
+    handle(ctx: TemplateContext, argument: string, body: string): string
+}
+
+function parseArgument(argument: string): {[key: string]: string} {
+    const pairs = argument.split(',')
+    const result: {[key: string]: string} = {}
+    for (let pair of pairs) {
+        const kv = pair.split('=', 2)
+        if (kv.length == 2) {
+            result[kv[0]] = kv[1]
+        } else {
+            result[kv[0]] = ''
+        }
+    }
+    return result
 }
 
 class Comment implements Command {
     name = 'comment'
-    handle(ctx: Context, argument: string, body: string): string {
+    handle(ctx: TemplateContext, argument: string, body: string): string {
         return ''
     }
 }
@@ -27,35 +41,62 @@ class Comment implements Command {
 class IfCN implements Command {
     name = 'ifCN'
     
-    handle(ctx: Context, argument: string, body: string): string {
+    handle(ctx: TemplateContext, argument: string, body: string): string {
         return ctx.lang == 'cn' ? body: ''
     }
 }
 
 class IfEN implements Command {
     name = 'ifEN'
-    handle(ctx: Context, argument: string, body: string): string {
+    handle(ctx: TemplateContext, argument: string, body: string): string {
         return ctx.lang == 'en' ? body: ''
     }
 }
 
 class Newline implements Command {
     name = 'newline'
-    handle(ctx: Context, argument: string, body: string): string {
+    handle(ctx: TemplateContext, argument: string, body: string): string {
         return '\n' + (body ? body: '')
     }
 }
 
-class Ctx implements Command {
-    name = 'ctx'
-    handle(ctx: Context, argument: string, body: string): string {
+class Var implements Command {
+    name = 'var'
+    handle(ctx: TemplateContext, argument: string, body: string): string {
         if (body) {
             throw new Error(`ctx command should't has body`)
         }
         if (!argument) {
             throw new Error(`ctx command should has argument`)
         }
-        return ctx.payload ? ctx.payload[argument]: ''
+        return ctx.vars ? ctx.vars[argument]: ''
+    }
+}
+
+class Section implements Command {
+    name = 'section'
+    handle(ctx: TemplateContext, argument: string, body: string): string {
+        const clz = this.getClass(ctx, argument)
+        const result = []
+        result.push(clz ? `<section class="${clz}">`: `<section>`)
+        result.push(body)
+        result.push(`</section>`)
+        return result.join('\n')
+    }
+
+    getClass(ctx: TemplateContext, argument: string): string|null {
+        const params = parseArgument(argument)
+        console.log({params})
+        if (params['class']) {
+            return params['class']
+        }
+        if (params['classvar'])  {
+            const ctxKey = `classvar-` + params['classvar']
+            if (ctx.vars && ctx.vars[ctxKey]) {
+                return ctx.vars[ctxKey]
+            }
+        }
+        return null
     }
 }
 
@@ -63,7 +104,7 @@ class Ctx implements Command {
 class Table implements Command {
     name = 'table'
 
-    handle(ctx: Context, argument: string, body: string): string {
+    handle(ctx: TemplateContext, argument: string, body: string): string {
         if (!body) {
             return ''
         }
@@ -130,7 +171,7 @@ class CommandStack {
         return this.commands[this.stackLength - 1]
     }
 
-    apply(ctx: Context, source: string): string {
+    apply(ctx: TemplateContext, source: string): string {
         let result = source
         for (let index = this.stackLength - 1; index >=0; index --) {
             let [command, argument] = this.commands[index]
@@ -168,7 +209,7 @@ class Transpiler {
         return new RegExp(pattern, 'g')
     }
 
-    transpile(source: string, ctx: Context): string {
+    transpile(source: string, ctx: TemplateContext): string {
         let lastIndex = 0
         let match = this.commandsPattern.exec(source)
         let results: string[] = []
@@ -177,7 +218,7 @@ class Transpiler {
             const startIndex = match.index
             const selfClose = allMatched.endsWith(')@_')
             const content = source.substring(lastIndex, startIndex)
-            console.log({allMatched, commandName, argument, startIndex, selfClose, lastIndex, content})
+            //console.log({allMatched, commandName, argument, startIndex, selfClose, lastIndex, content})
 
             commandName == 'end' && this.stack.verify(argument)
             results.push(this.stack.apply(ctx, content))
@@ -203,8 +244,9 @@ const register = new CommandRegister()
 register.register(new IfCN())
         .register(new IfEN())
         .register(new Newline())
-        .register(new Ctx())
+        .register(new Var())
         .register(new Table())
+        .register(new Section())
 
 let s = `
 # abc
@@ -220,13 +262,11 @@ _@end()_
 _@ifEN()_ hello world _@end()_
 `
 
-export type TemplateContext = Context
-
-export function renderTemplate(source: string, ctx: TemplateContext): string {
+export function render(source: string, ctx: TemplateContext): string {
     const transpiler = register.getTransplier()
     return transpiler.transpile(source, ctx)
 }
 
 export function test() {
-    console.log(renderTemplate(s, {'lang': 'cn'}))
+    console.log(render(s, {'lang': 'cn'}))
 }

@@ -1,4 +1,4 @@
-import { renderTemplate } from '../content/template'
+import { render, type Context } from '../content/template_engine'
 // @ts-ignore: Allow host project lack of the external dependeny
 import {marked} from 'marked'
 
@@ -44,7 +44,7 @@ function stripPrefiexedWhitespace(s: string): {result: string, prefixedWhitespac
     return {result: lines.map(s => s.replace(prefixPattern, '')).join('\n'), prefixedWhitespace,}
 }
 
-export default function Markdown({children, debug}: {children?: any, debug?: boolean}) {
+export default function Markdown({children, context={}, debug}: {children?: any, context: Context, debug?: boolean}) {
     if (!children) {
         return;
     }
@@ -52,7 +52,7 @@ export default function Markdown({children, debug}: {children?: any, debug?: boo
     const {result: markdown, prefixedWhitespace} = stripPrefiexedWhitespace(rawInput)
     //const instructedMarkdown = instructMarkdown(markdown)
     const fixedMarkdown = fixAstroComponent(markdown)
-    const renderedMarkdown = renderTemplate(fixedMarkdown, {})
+    const renderedMarkdown = render(fixedMarkdown, context)
     if (debug) {
         console.log({rawInput, prefixedWhitespace, markdown, renderedMarkdown})
     }

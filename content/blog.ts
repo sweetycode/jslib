@@ -1,3 +1,7 @@
+import { render, type TemplateContext } from "./template_engine"
+//@ts-ignore
+import {marked} from 'marked'
+
 const DEV = import.meta.env.DEV
 
 interface Content<T> {
@@ -19,6 +23,10 @@ interface HasTitle {
 
 interface HasCategory {
     category?: string
+}
+
+interface HasVars {
+    vars?: {[key: string]: string}
 }
 
 
@@ -78,4 +86,15 @@ export function simplePostsStaticPaths<T extends HasDraft&HasTitle&HasCategory>(
             props: {post}
         }
     })
+}
+
+export function renderContent<T extends HasVars>(post: Content<T>, ctx: TemplateContext = {}): string {
+    const vars = post.data.vars ? post.data.vars: {}
+    return marked.parse(render(post.body, {
+        ...ctx,
+        vars: {
+            ...ctx.vars,
+            ...vars,
+        }
+    })) as string
 }
