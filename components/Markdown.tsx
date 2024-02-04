@@ -1,4 +1,4 @@
-import { render, type Context } from '../content/template_engine'
+import { render, type TemplateContext } from '../content/template_engine'
 // @ts-ignore: Allow host project lack of the external dependeny
 import {marked} from 'marked'
 
@@ -44,7 +44,7 @@ function stripPrefiexedWhitespace(s: string): {result: string, prefixedWhitespac
     return {result: lines.map(s => s.replace(prefixPattern, '')).join('\n'), prefixedWhitespace,}
 }
 
-export default function Markdown({children, context={}, debug}: {children?: any, context: Context, debug?: boolean}) {
+export default function Markdown({children, context={}, debug}: {children?: any, context: TemplateContext, debug?: boolean}) {
     if (!children) {
         return;
     }
