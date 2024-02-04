@@ -6,8 +6,12 @@
 1. Create submodule
 
 ```sh
-git submodule add git@my.github.com:sweetycode/jslib.git
+git submodule add https://github.com/sweetycode/jslib.git
+
+// git@my.github.com:sweetycode/jslib.git
 ```
+
+
 
 2. Update submodule
 
