@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "preact/hooks"
-import { dynScript } from "../scripts/dynld"
+import { installScript } from "../scripts/install"
 import { debounce } from "../scripts/perf"
 
 interface Props {
@@ -9,25 +9,25 @@ interface Props {
     className?: string
 }
 
-interface MonacoEditor {
+export interface MonacoEditor {
     editor: {
         create: (container: HTMLElement, options: {[key: string]: any}) => any
+        createDiffEditor: (container: HTMLElement, options: {[key: string]: any}) => any
+        createModel: (value: string, lang: string) => any
     }
 }
 
-function dynMonaco(): Promise<MonacoEditor> {
-    return new Promise((resolve, reject) => {
-        dynScript('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js')
-        .then(() => {
-            const windowRequire = (window as any).require as any
-            const windowMonaco = (window as any).monaco as any
-            windowRequire.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }})
-            windowRequire(['vs/editor/editor.main'], () => resolve(windowMonaco as MonacoEditor))
-        }).catch(reject)
+export async function installMonaco(): Promise<MonacoEditor> {
+    await installScript('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js')
+
+    const windowRequire = (window as any).require as any
+    windowRequire.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }})
+    return new Promise((r) => {
+        windowRequire(['vs/editor/editor.main'], () => r((window as any).monaco as MonacoEditor))
     })
 }
 
-export default function Monaco({className='h-full', value='', onChange, language}: Props) {
+export default function Monaco({className='h-screen', value='', onChange, language}: Props) {
     const editorElem = useRef<any>(null)
     const editorRef = useRef<any>(null)
 
@@ -36,7 +36,7 @@ export default function Monaco({className='h-full', value='', onChange, language
     }, 300), [onChange])
 
     useEffect(() => {
-        dynMonaco().then((monaco) => {
+        installMonaco().then((monaco) => {
             const editor = editorRef.current = monaco.editor.create(editorElem.current, {
                 automaticLayout: true,
                 fontSize: 18,
