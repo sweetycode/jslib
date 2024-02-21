@@ -30,10 +30,7 @@ export async function installMonaco(): Promise<MonacoEditor> {
 export default function Monaco({className='h-screen', value='', onChange, language}: Props) {
     const editorElem = useRef<any>(null)
     const editorRef = useRef<any>(null)
-
-    const debouncedOnChange = useCallback(debounce((v: string) => {
-        onChange && onChange(v)
-    }, 300), [onChange])
+    const editorValueRef = useRef<string|null>(value)
 
     useEffect(() => {
         installMonaco().then((monaco) => {
@@ -46,9 +43,16 @@ export default function Monaco({className='h-screen', value='', onChange, langua
                 value: value,
             });
 
-            editor.getModel().onDidChangeContent((evt: any) => {
-                debouncedOnChange(editor.getModel().getValue())
-            })
+            if (onChange != null) {
+                editor.getModel().onDidChangeContent(debounce(() => {
+                    const value = editor.getModel().getValue()
+                    if (editorValueRef.current == value) {
+                        return
+                    }
+                    //console.log('onChange')
+                    onChange(editorValueRef.current = editor.getModel().getValue())
+                }, 300))
+            }
         })
         return () => {
             if (editorRef.current) {
@@ -57,6 +61,13 @@ export default function Monaco({className='h-screen', value='', onChange, langua
             }
         }
     }, [])
+
+    useEffect(() => {
+        if (editorRef.current == null || value == editorValueRef.current) {
+            return
+        }
+        editorRef.current.getModel().setValue(value)
+    }, [value])
 
     return <div ref={editorElem} className={className}></div>
 }

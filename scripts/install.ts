@@ -1,63 +1,52 @@
 import { sha1 } from "./crypt"
 
 
-function genTagId(type: "js"|"css", sign: string): string {
-    return `dy${sign.slice(0, 8)}`
+async function generateId(src: string): Promise<string> {
+    const sign = await sha1(src)
+    return sign.slice(0, 8)
 }
+
+const getNodeEventSource = (() => {
+    const mapping = new Map<String, Promise<void>>()
+    return async function(elem: HTMLElement, id: string) {
+        const value = mapping.get(id)
+        if (value != null) {
+            return value
+        }
+        const eventSource = new Promise<void>((r, e) => {
+            elem.addEventListener('load', () => r())
+            elem.addEventListener('error', (reason) => e(reason))
+        })
+        mapping.set(id, eventSource)
+        return eventSource
+    }
+})();
+
 
 export async function installScript(
     src: string
-): Promise<{success: boolean, firstTime: boolean}> {
-    const sign = await sha1(src)
-    const tagId = genTagId('js', sign)
-    let el = document.getElementById(tagId)
-    if (el != null) {
-        console.log(`skip duplicated dynload script: ${src}`)
-        return {success: el.dataset.ok === '1', firstTime: false}
-    }
-    return new Promise(r => {
+): Promise<void> {
+    const id = await generateId(src)
+    let el = document.getElementById(id)
+    if (el == null) {
         el = document.createElement('script');
-        el.setAttribute('id', tagId)
+        el.setAttribute('id', id)
         el.setAttribute('src', src)
-
-        function listener(success: boolean) {
-            el!.dataset.ok = success? '1': '0'
-            if (!success) {
-                console.log(`failed to dyn load script: ${src}`)
-            }
-            r({success, firstTime: true})
-        }
-        el.addEventListener('load', () => listener(true))
-        el.addEventListener('error', () => listener(false))
         document.body.appendChild(el)
-    })
+    }
+
+    return getNodeEventSource(el, id)
 }
 
-export async function installStyle(src: string): Promise<void> {
-    const sign = await sha1(src)
-    const tagId = genTagId('js', sign)
-    let el = document.getElementById(tagId)
-    if (el != null) {
-        console.log(`skip duplicated dynload style: ${src}`)
-        return
-    }
-
-    return new Promise(r => {
+export async function installStyle(href: string): Promise<void> {
+    const id = await generateId(href)
+    let el = document.getElementById(id)
+    if (el == null) {
         el = document.createElement('link')
         el.setAttribute('rel', 'stylesheet')
-        el.setAttribute('id', tagId)
+        el.setAttribute('id', id)
         el.setAttribute('type', 'text/css')
-        el.setAttribute('href', src)
-
-        function listener(success: boolean) {
-            el!.dataset.ok = success? '1': '0'
-            if (!success) {
-                console.log(`failed to dynload style: ${src}`)
-            }
-            r()
-        }
-        el.addEventListener('load', () => listener(true))
-        el.addEventListener('error', () => listener(false))
+        el.setAttribute('href', href)
         document.head.appendChild(el)
-    })
+    }
 }
