@@ -26,7 +26,7 @@ export function useMonacoRef({containerRef, language='plaintext', value='', init
                 editorRef.current = null
             }
         }
-    })
+    }, [])
 
     return editorRef
 }

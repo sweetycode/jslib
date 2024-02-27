@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useRef } from "preact/hooks"
-import { installScript } from "../scripts/install"
-import { debounce } from "../scripts/perf"
+import { useRef } from "preact/hooks"
 import { useMonacoRef } from "@jslib/deps/monaco/hooks"
 
 interface Props {
-    value: string
+    value?: string
     language?: string
     className?: string
 }
