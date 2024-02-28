@@ -23,15 +23,15 @@ const getNodeEventSource = (() => {
 })();
 
 
-export const {setDependecies, getDependency} = (() => {
+export const {setInstallDependecies, getInstallDependency} = (() => {
     var dependenciesMap = new Map<string, () => Promise<void>>()
     return {
-        setDependecies(dependencies: {[key: string]:() => Promise<void>}) {
+        setInstallDependecies(dependencies: {[key: string]:() => Promise<void>}) {
             Object.keys(dependencies).forEach(key => {
                 dependenciesMap.set(key, dependencies[key])
             })
         },
-        getDependency(src: string): (() => Promise<void>) | null {
+        getInstallDependency(src: string): (() => Promise<void>) | null {
             const value = dependenciesMap.get(src)
             if (value == null) {
                 return null
@@ -45,7 +45,7 @@ export const {setDependecies, getDependency} = (() => {
 export async function installScript(
     src: string
 ): Promise<void> {
-    const dependency = getDependency(src)
+    const dependency = getInstallDependency(src)
     if (dependency != null) {
         await dependency()
     }
