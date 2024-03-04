@@ -92,7 +92,7 @@ export async function installInlineStyle(style: string, id?: string): Promise<vo
     if (el == null) {
         el = document.createElement('style')
         el.setAttribute('id', elemId)
-        el.innerText = style
+        el.innerHTML = style
         document.head.appendChild(el)
     }
 }
