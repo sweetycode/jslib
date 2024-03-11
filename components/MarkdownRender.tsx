@@ -44,7 +44,7 @@ function stripPrefiexedWhitespace(s: string): {result: string, prefixedWhitespac
     return {result: lines.map(s => s.replace(prefixPattern, '')).join('\n'), prefixedWhitespace,}
 }
 
-export default function Markdown({children, context={}, debug}: {children?: any, context: TemplateContext, debug?: boolean}) {
+export default function MarkdownRender({children, context={}, debug}: {children?: any, context: TemplateContext, debug?: boolean}) {
     if (!children) {
         return;
     }
