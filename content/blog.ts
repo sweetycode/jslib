@@ -1,14 +1,10 @@
-import { render, type TemplateContext } from "./template_engine"
-//@ts-ignore
-import {marked} from 'marked'
-
 const DEV = import.meta.env.DEV
 
-interface Content<T> {
-	id: string // 'test/filename.md'
-	slug: string // 'test/filename'
+export interface ContentEntry<T> {
+	id: string          // 'test/filename.md'
+	slug: string        // 'test/filename'
 	body: string
-	collection: string // 'posts'
+	collection: string  // 'posts'
 	data: T
 }
 
@@ -25,19 +21,27 @@ interface HasCategory {
     category?: string
 }
 
-interface HasVars {
-    vars?: {[key: string]: string}
+interface HasCreatedAt {
+    createdAt?: Date
 }
 
 
-export function filterDraft<T extends HasDraft>(items: Content<T>[]): Content<T>[] {
+type ContentCollection<T> = ContentEntry<T>[]
+
+
+export function noop<T>(items: ContentCollection<T>): ContentCollection<T> {
+    return items
+}
+
+export function filterDraft<T extends HasDraft>(items: ContentCollection<T>): ContentCollection<T> {
     if (!DEV) {
         return items.filter(item => item.data.draft !== true);
     }
     return items
 }
 
-export function draftTitle<T extends HasDraft & HasTitle>(items: Content<T>[]): Content<T>[] {
+
+export function draftTitle<T extends HasDraft & HasTitle>(items: ContentCollection<T>): ContentCollection<T> {
     return items.map(item => {
         if (item.data.draft === true) {
             return {
@@ -53,15 +57,15 @@ export function draftTitle<T extends HasDraft & HasTitle>(items: Content<T>[]): 
 }
 
 
-export function categorizeByDirectory<T extends HasCategory>(items: Content<T>[]): Content<T>[] {
+export function extractCategory<T extends HasCategory>(items: ContentCollection<T>, {removeFromSlug=false}={}): ContentCollection<T> {
     return items.map(item => {
         const originalSlug = item.slug
-        const sections = originalSlug.split('/')
+        const sections = originalSlug.split('/', 2)
         if (sections.length == 1) {
             return item
         }
         const category = sections[0]
-        const slug = item.data.category == null ? sections[sections.length - 1]: item.data.category
+        const slug = removeFromSlug ? sections[sections.length - 1]: item.slug
         return {
             ...item,
             slug: slug,
@@ -73,28 +77,44 @@ export function categorizeByDirectory<T extends HasCategory>(items: Content<T>[]
     })
 }
 
+export function extractCreatedAt<T extends HasCreatedAt>(items: ContentCollection<T>, {removeFromSlug = true} = {}): ContentCollection<T> {
+    return items.map(item => {
+        const originalSlug = item.slug
+        const sections = originalSlug.split('/')
+        let lastSection = sections.pop()!
 
-export function simplePostsCollection<T extends HasDraft&HasTitle&HasCategory>(posts: Content<T>[]): Content<T>[] {
-    return categorizeByDirectory(draftTitle(filterDraft(posts)))
-}
+        let createdAt: Date|undefined = item.data.createdAt
+        if (/^\d{6}[_-]/.test(lastSection)) {
+            if (createdAt == null) {
+                createdAt = new Date(`20${lastSection.slice(0, 2)}-${lastSection.slice(2, 4)}-${lastSection.slice(4,6)}`)
+            }
+            lastSection = lastSection.slice(7)
+        }
 
-
-export function simplePostsStaticPaths<T extends HasDraft&HasTitle&HasCategory>(posts: Content<T>[]): {params: {slug: string}, props: {post: Content<T>}}[] {
-    return simplePostsCollection(posts).map(post => {
+        console.log({removeFromSlug})
+        const slug = removeFromSlug ? [...sections, lastSection].join('/'): item.slug
         return {
-            params: {slug: post.slug},
-            props: {post}
+            ...item,
+            slug: slug,
+            data: {
+                ...item.data,
+                createdAt: createdAt,
+            }
         }
     })
 }
 
-export function renderContent<T extends HasVars>(post: Content<T>, ctx: TemplateContext = {}): string {
-    const vars = post.data.vars ? post.data.vars: {}
-    return marked.parse(render(post.body, {
-        ...ctx,
-        vars: {
-            ...ctx.vars,
-            ...vars,
+
+interface StaticPathConfig<T> {
+    params: {slug: string},
+    props: {content: ContentEntry<T>}
+}
+
+export function contentCollectionToStaticPaths<T>(collection: ContentCollection<T>): StaticPathConfig<T>[] {
+    return collection.map(item => {
+        return {
+            params: {slug: item.slug},
+            props: {content: item}
         }
-    })) as string
+    })
 }
