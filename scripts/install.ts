@@ -1,65 +1,57 @@
 import { sha1 } from "./crypt"
 
+const dependenciesMap = new Map<string, () => Promise<void>>()
+const eventSourceMap = new Map<string, Promise<void>>()
+
+
 
 async function generateId(src: string): Promise<string> {
     const sign = await sha1(src)
     return sign.slice(0, 8)
 }
 
-const getNodeEventSource = (() => {
-    const mapping = new Map<String, Promise<void>>()
-    return async function(elem: HTMLElement, id: string) {
-        const value = mapping.get(id)
-        if (value != null) {
-            return value
-        }
-        const eventSource = new Promise<void>((r, e) => {
-            elem.addEventListener('load', () => r())
-            elem.addEventListener('error', (reason) => e(reason))
-        })
-        mapping.set(id, eventSource)
-        return eventSource
-    }
-})();
 
+export function setInstallDependecies(dependencies: {[key: string]:() => Promise<void>}) {
+    Object.keys(dependencies).forEach(key => {
+        dependenciesMap.set(key, dependencies[key])
+    })
+}
 
-export const {setInstallDependecies, getInstallDependency} = (() => {
-    var dependenciesMap = new Map<string, () => Promise<void>>()
-    return {
-        setInstallDependecies(dependencies: {[key: string]:() => Promise<void>}) {
-            Object.keys(dependencies).forEach(key => {
-                dependenciesMap.set(key, dependencies[key])
-            })
-        },
-        getInstallDependency(src: string): (() => Promise<void>) | null {
-            const value = dependenciesMap.get(src)
-            if (value == null) {
-                return null
-            }
-            return value
-        }
+export function getInstallDependency(src: string): (() => Promise<void>) | null {
+    const value = dependenciesMap.get(src)
+    if (value == null) {
+        return null
     }
-})();
+    return value
+}
 
 
 export async function installScript(
     src: string
 ): Promise<void> {
+    const exsiting = eventSourceMap.get(src)
+    if (exsiting) {
+        return exsiting
+    }
+
+    // install dependencies
     const dependency = getInstallDependency(src)
     if (dependency != null) {
         await dependency()
     }
 
-    const id = await generateId(src)
-    let el = document.getElementById(id)
-    if (el == null) {
-        el = document.createElement('script');
-        el.setAttribute('id', id)
-        el.setAttribute('src', src)
-        document.body.appendChild(el)
-    }
+    // create element
+    const el = document.createElement('script');
+    el.setAttribute('src', src)
 
-    return getNodeEventSource(el, id)
+    const eventSource = new Promise<void>((r, e) => {
+        el.addEventListener('load', () => r())
+        el.addEventListener('error', (reason) => e(reason))
+    })
+    eventSourceMap.set(src, eventSource)
+    document.head.appendChild(el)
+
+    return eventSource
 }
 
 export async function installStyle(href: string): Promise<void> {

@@ -6,7 +6,7 @@ import { debounce } from '../../scripts/perf';
 
 interface Options {
     language?: string
-    value?: string
+    value?: string|null
     onChange?: (editor: ICodeEditor, ...args: any) => void
     debounce?: number
     init?: (editor: ICodeEditor) => void
@@ -23,7 +23,7 @@ export async function createUnamangedMonaco(container: HTMLElement,
             //renderSideBySide: true,
             lineNumbersMinChars: 3,
             language: language,
-            value: value,
+            value: value || '',
         });
 
         if (onChange) {
