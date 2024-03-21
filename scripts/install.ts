@@ -78,13 +78,22 @@ export async function installInlineScript(script: string, id?: string): Promise<
     }
 }
 
-export async function installInlineStyle(style: string, id?: string): Promise<void> {
-    const elemId = id || await generateId(style)
-    let el = document.getElementById(elemId)
-    if (el == null) {
-        el = document.createElement('style')
-        el.setAttribute('id', elemId)
+const inlineStyleSet = new Map<string, HTMLElement>()
+export function installInlineStyle(style: string): () => void {
+    if (!inlineStyleSet.has(style)) {
+        const el = document.createElement('style')
         el.innerHTML = style
         document.head.appendChild(el)
+        inlineStyleSet.set(style, el)
+    }
+    
+    return () => uninstallInlineStyle(style)
+}
+
+function uninstallInlineStyle(style: string) {
+    const elem = inlineStyleSet.get(style)
+    if (elem != null) {
+        elem.remove()
+        inlineStyleSet.delete(style)
     }
 }

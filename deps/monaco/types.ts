@@ -1,11 +1,23 @@
-export interface MonacoNamespace {
-    editor: EditorNamespace
+export interface MonacoApi {
+    editor: EditorApi
 }
 
 
-export interface EditorNamespace {
-    create: (container: HTMLElement, options: {[key: string]: any}) => ICodeEditor
-    createDiffEditor: (container: HTMLElement, options: {[key: string]: any}) => IDiffEditor
+interface EditorOptions {
+    fontSize?: number
+    lineNumbers?: "on" | "off" | "relative" | "interval" | ((lineNumber: number) => string)
+    readOnly?: boolean
+    [key: string]: any
+}
+
+interface DiffEditorOptions extends EditorOptions {
+    splitViewDefaultRatio?: number
+    enableSplitViewResizing?: boolean
+}
+
+export interface EditorApi {
+    create: (container: HTMLElement, options: EditorOptions) => ICodeEditor
+    createDiffEditor: (container: HTMLElement, options: DiffEditorOptions) => IDiffEditor
     createModel: (value: string, lang: string) => ITextModel
 }
 
@@ -17,12 +29,20 @@ interface IEditor extends IDisposable {
     addAction: (descriptor: IActionDescriptor) => void
 }
 
-export interface ICodeEditor extends IEditor{
+export interface ICodeEditor extends IEditor {
     getModel: () => ITextModel
+    updateOptions: (newOptions: EditorOptions) => void
+}
+
+export interface IDiffEditorModel {
+    original: ITextModel, modified: ITextModel
 }
 
 export interface IDiffEditor extends IEditor {
-    setModel: ({original, modified}: {original: ITextModel, modified: ITextModel}) => void
+    setModel: (model: IDiffEditorModel) => void
+    getModel: () => IDiffEditorModel
+    getOriginalEditor: () => ICodeEditor
+    getModifiedEditor: () => ICodeEditor
 }
 
 export interface ITextModel {
