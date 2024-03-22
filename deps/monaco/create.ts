@@ -78,3 +78,43 @@ export async function createUnmanagedDiffEditor(container: HTMLElement,
         return editor
     })
 }
+
+
+// class EnhancedDiffAlgorithmProvider {
+//     private standaloneServices;
+//     private WorkerBasedDocumentDiffProvider
+
+//     constructor(standaloneServices: any, WorkerBasedDocumentDiffProvider: any) {
+//         this.standaloneServices = standaloneServices
+//         this.WorkerBasedDocumentDiffProvider = WorkerBasedDocumentDiffProvider
+//     }
+
+// 	createDiffProvider(editor: any, options: any) {
+// 		console.log('2');
+// 		const provider = this.standaloneServices.StandaloneServices.initialize().createInstance(this.WorkerBasedDocumentDiffProvider, {});
+
+// 		return {
+// 			onDidChange: () => {},
+// 			async computeDiff(original: any, modified: any, options: any, token: any) {
+// 				const d = await provider.computeDiff(original, modified, options, token);
+// 				return {
+// 					changes: d.changes.slice(1),
+// 					moves: [],
+// 					identical: false,
+// 					quitEarly: false,
+// 				};
+// 			}
+// 		}
+// 	}
+// }
+
+// export async function installEnhancedDiffAlgorithm(): Promise<void> {
+//     await installMonaco()
+//     const windowRequire = (window as any).require
+//     const WorkerBasedDocumentDiffProvider = windowRequire('vs/editor/browser/widget/diffEditor/diffProviderFactoryService').WorkerBasedDocumentDiffProvider;
+//     const standaloneServices = windowRequire("vs/editor/standalone/browser/standaloneServices");
+
+//     standaloneServices.StandaloneServices.initialize({
+//         'diffProviderFactoryService': new EnhancedDiffAlgorithmProvider(WorkerBasedDocumentDiffProvider, standaloneServices),
+//     });
+// }
